@@ -3,7 +3,7 @@ import sys
 import math
 from collections import Counter
 
-bound_purity = 0.81
+bound_purity = 0.8
 max_depth = 6
 
 class node:
@@ -55,10 +55,17 @@ def makenode(nod):
     attr_num = len(attr)-1
     final_len = len(final)
     lenlist = len(list)
-    min_ent = 1000
+    max_gain = -100
     idx = -1
     answer = []
     final_list = []
+
+    origin = np.zeros(final_len)
+    for d in list:
+        for f in range(final_len):
+            if(d[attr_num] == final[f]):
+                origin[f] += 1
+    origin_ent = entropy(origin)
     for d in list:
         final_list.append(d[attr_num])
     if(nod.isend):
@@ -69,6 +76,7 @@ def makenode(nod):
         return
     for i in range(attr_num):
         size = len(vars[i])
+        sinfo = np.zeros(size)
         divided_list = []
         for tmp in range(size):
             divided_list.append([])
@@ -76,6 +84,10 @@ def makenode(nod):
             for k in range(len(vars[i])):
                 if(list[j][i] == vars[i][k]):
                     divided_list[k].append(j)
+                    sinfo[k] += 1
+        for s in sinfo:
+            s = float(s)/sum(sinfo)
+        splitinfo = entropy(sinfo)
         ents = []
         all = 0
         if(divnum(divided_list) <= 1):
@@ -93,9 +105,11 @@ def makenode(nod):
                 ents[e] /= float(all)
                 ents[e] *= len(dv)
         entro = sum(ents)
-        if(entro < min_ent):
+        gain = origin_ent - entro
+        gainratio = gain/splitinfo
+        if(max_gain < gainratio):
             idx = i
-            min_ent = entro
+            max_gain = gainratio
             answer = divided_list
     if(idx < 0):
         nod.isend = True
@@ -188,7 +202,7 @@ def main(train, test, result):
             continue
         test_list.append(spliter)
     f.close
-    predict(train_list, 'dt_sample1.txt')
+
     predict(test_list, result)
 
     print("\nTest complete! Output file " + result + ' created.')
